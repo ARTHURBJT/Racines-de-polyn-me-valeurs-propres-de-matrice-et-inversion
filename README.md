@@ -9,3 +9,4 @@ Le programme Ocaml contient :
 -Une fonction qui renvoie l'inverse d'une matrice (s'il existe)
 
 Je détaille toute les méthodes utilisées et/ou dévellopées pour la réalisation de ce projet et présente des exemples dans ce document très précis :
+https://github.com/ARTHURBJT/Racines-de-polynome-valeurs-propres-de-matrice-et-inversion/blob/main/Racines_de_polyn_me__valeurs_propres_de_matrice%20(2).pdf
