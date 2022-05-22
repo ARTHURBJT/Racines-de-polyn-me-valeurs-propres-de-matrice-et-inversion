@@ -560,23 +560,10 @@ let mat =
 val_propre_vect_propre mat;;
 
 
-
-5./.6.;;
-
-(5.-.2.30073525436772197)/.(-2.30073525436772197-.6.);;
-
-0.83333333333333333 *. 0.666666666667;;
-(*)
 let mat1 = 
   [|[|1.5;0.5;0.5|];
   [|3.;1.;1.|];
   [|9.;3.;4.|]|];;
 
-  let m = sys_espace_propre mat1 0.;;
-  trigonalise_sys m;;
-  m;;
 
   val_propre_vect_propre mat1;;
-
-
-
