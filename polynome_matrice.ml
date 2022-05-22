@@ -229,9 +229,10 @@ det mat;;
 (*mat1 et mat2 carre de meme dimension*)
 let somme_mat mat1 mat2 = 
   let n = Array.length mat1 in
-  let m = Array.make_matrix n n [] in
+  let p = Array.length (mat1.(0)) in
+  let m = Array.make_matrix n p [] in
   for i = 0 to (n-1) do
-    for j = 0 to (n-1) do
+    for j = 0 to (p-1) do
       m.(i).(j) <- somme (mat1.(i).(j)) (mat2.(i).(j)) 
     done 
   done;
@@ -240,16 +241,17 @@ let somme_mat mat1 mat2 =
 
 let somme_mat_scal mat1 mat2 = 
   let n = Array.length mat1 in
-  let m = Array.make_matrix n n 0. in
+  let p = Array.length (mat1.(0)) in
+  let m = Array.make_matrix n p 0. in
   for i = 0 to (n-1) do
-    for j = 0 to (n-1) do
+    for j = 0 to (p-1) do
       m.(i).(j) <- mat1.(i).(j) +. mat2.(i).(j)
     done 
   done;
   m;;
 
 
-(*mat1 et mat2 carre de meme dimension, multiplication m1 * m2 (dans cet ordre)*)
+(*mat1 et mat2 carre de meme dimension n*n, multiplication m1 * m2 (dans cet ordre)*)
 let mult_mat m1 m2 = 
   let n = Array.length m1 in
   let m = Array.make_matrix n n 0. in
@@ -280,9 +282,10 @@ let mult_scal_mat k mat =
 
 let mult_scal_mat_scal k mat = 
   let n = Array.length mat in
-  let m = Array.make_matrix n n 0. in
+  let p = Array.length (mat.(0)) in
+  let m = Array.make_matrix n p 0. in
   for i = 0 to (n-1) do
-    for j = 0 to (n-1) do
+    for j = 0 to (p-1) do
       m.(i).(j) <- k *. mat.(i).(j)
     done 
   done;
@@ -374,3 +377,206 @@ let inverse_matrice mat =
 
 
 inverse_matrice mat;;
+
+
+
+(*Vecteurs propres*)
+
+let somme_ligne l1 l2 = 
+  let n = Array.length l1 in
+  let m = Array.make n 0. in
+  for i = 0 to (n-1) do
+      m.(i) <- l1.(i) +. l2.(i)
+  done;
+  m;;
+
+
+let mult_scal_ligne k l = 
+  let n = Array.length l in
+  let m = Array.make n 0. in
+  for i = 0 to (n-1) do
+      m.(i) <- k *. l.(i)
+  done;
+  m;;
+
+
+let echange_ligne i j mat = 
+  let li = mat.(i) in
+  mat.(j) <- mat.(j);
+  mat.(i) <- li;;
+
+
+let combinaison_lin a i b j mat =
+  mat.(i) <- somme_ligne (mult_scal_ligne a mat.(i)) (mult_scal_ligne b mat.(j));;
+
+
+(*renvoie le système decrivant E(lambda) pour une martrice m et lambda une de ses valeurs propres*)
+let sys_espace_propre mat lambda =
+  let n = Array.length mat in
+    somme_mat_scal mat (mult_scal_mat_scal (-.lambda) (id_scal n));;
+  
+
+
+let trouve_pivot mat j =
+  let n = Array.length mat in
+  let k = ref (-1) in
+  for i = 0 to (n-1) do
+    if mat.(i).(j) <> 0. then (k := i)
+  done;
+  !k;;
+
+
+(*1ere etape de l'algorithme du pivot de gauss avec mat.(i).(i) un pivot*)
+let simplifie1_sys mat i =
+  let n = Array.length mat in
+  let pivot = mat.(i).(i) in
+  for k = (i+1) to (n-1) do
+    let coef2 = mat.(k).(i) in
+    if coef2 <> 0. then
+      combinaison_lin pivot k (-.coef2) i mat
+  done;;
+
+
+(*2nd etape de l'algorithme du pivot de gauss avec mat.(i).(j) un pivot*)
+let simplifie2_sys mat i =
+  let pivot = mat.(i).(i) in
+  for k = 0 to (i-1) do
+    let coef2 = mat.(k).(i) in
+    if coef2 <> 0. then
+      combinaison_lin pivot k (-.coef2) i mat
+  done;;
+
+
+(*rend unitaire toute les lignes d'une matrice deja trigonalisee*)
+let simplifie3_sys mat =
+  let n = Array.length mat in
+  for k = 0 to (n-1) do
+    let coef = mat.(k).(k) in
+    if coef <> 0. then
+      combinaison_lin (1./.coef) k 0. 0 mat
+  done;;
+
+
+
+let arrondi_sys mat =
+  let n = Array.length mat in
+  for i = 0 to (n-1) do
+    if round (mat.(i).(i) *. 1000000.) /. 1000000. = 0. then mat.(i).(i) <- 0.
+  done;;
+
+
+
+
+let trigonalise_sys mat =
+  let n = Array.length mat in
+  for i = 0 to (n-1) do
+    let pivot = trouve_pivot mat i in
+    if pivot <> (-1) then
+      begin
+        echange_ligne i pivot mat;
+        simplifie1_sys mat i;
+        arrondi_sys mat
+      end
+  done;
+  for i = 0 to (n-1) do
+    if mat.(n-1-i).(n-1-i) <> 0. then
+      simplifie2_sys mat (n-1-i)
+  done;
+  simplifie3_sys mat;;
+
+
+(*mat a déja subit trigonalise_sys mat, on peut facilement lire les vecteurs propres*)
+let trouve_vecteur_propre j mat =
+  let n = Array.length mat in
+  let colonne = Array.make n 0. in
+  for i = 0 to (j-1) do
+    colonne.(i) <- -. mat.(i).(j)
+  done;
+  colonne.(j) <- 1.;
+  colonne;;
+
+
+
+let print_colonne colonnes = 
+  let n = Array.length (List.hd colonnes) in
+
+  let rec aux i t =
+    if i = n-1 then (print_float t.(i) ; print_string ")")
+    else 
+      begin 
+        print_float t.(i) ; 
+        print_string " , " ;
+        aux (i+1) t
+      end in
+
+      let rec aux1 l = match l with
+        | [] -> ()
+        | [t] -> (print_string "(" ; aux 0 t)
+        | t :: q -> (print_string "(" ; aux 0 t ; print_string ", " ; aux1 q) in
+        
+        aux1 colonnes;;
+
+
+
+let rec affiche l1 l2 = match l1,l2 with
+  | [],[] -> ()
+  | t1 :: q1, t2 :: q2 -> 
+    print_string "Valeur propre : "; print_float t1; print_newline ();
+    print_string "Vecteurs propres associés : "; print_colonne t2; print_newline (); print_newline ();
+    affiche q1 q2;;
+
+
+
+let val_propre_vect_propre mat = 
+  let n = Array.length mat in
+  let l1 = valeur_propre mat in
+
+  let rec aux l= match l with
+    | [] -> []
+    | t :: q ->
+      let m = sys_espace_propre mat t in
+      trigonalise_sys m;
+
+      let rec aux1 j =
+        if j = -1 then []
+        else if m.(j).(j) = 0. then trouve_vecteur_propre j m :: (aux1 (j-1))
+        else aux1 (j-1) in
+
+        aux1 (n-1) :: (aux q) in
+
+    let l2 = aux l1 in
+    affiche l1 l2;;
+
+
+
+
+
+let mat = 
+  [|[|9.;6.;1.|];
+  [|3.;1.;1.|];
+  [|3.;4.;-1.|]|];;
+
+
+val_propre_vect_propre mat;;
+
+
+
+5./.6.;;
+
+(5.-.2.30073525436772197)/.(-2.30073525436772197-.6.);;
+
+0.83333333333333333 *. 0.666666666667;;
+(*)
+let mat1 = 
+  [|[|1.5;0.5;0.5|];
+  [|3.;1.;1.|];
+  [|9.;3.;4.|]|];;
+
+  let m = sys_espace_propre mat1 0.;;
+  trigonalise_sys m;;
+  m;;
+
+  val_propre_vect_propre mat1;;
+
+
+
